@@ -1,3 +1,6 @@
+## code by rodriguezrrp on GitHub
+## MIT license
+
 from random import choice as choose
 from random import shuffle as shuffle
 
@@ -158,10 +161,10 @@ class AI:
     # self.minmouseusage        - minimizeMouseUsage        - sort-of done (?)
     # self.maxpasses            - maxPassesPerIteration
     # self.smartstalledclick    - smartStalledRandomClick
-    # self.stalledsubset        - stalledSubsetCheck        - TODO
+    # self.stalledsubset        - stalledSubsetCheck
     # self.stalledbruteforce    - stalledBruteForceCheck    - TODO
     # self.alternatepass        - alternatePassDirection    - TODO
-    # self.mentalflags          - mentallyTrackFlags        - TODO
+    # self.mentalflags          - mentallyTrackFlags
 
     # note that: self.alternatethispass is used in each specific iteration
 

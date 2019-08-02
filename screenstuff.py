@@ -1,3 +1,6 @@
+## code by rodriguezrrp on GitHub
+## MIT license
+
 import time
 from itertools import chain
 
