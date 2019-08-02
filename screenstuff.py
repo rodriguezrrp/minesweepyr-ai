@@ -352,7 +352,10 @@ if __name__ == '__main__':
                     break
                 elif coleq(xycol, COL_3):
                     # note: tends to label clicked bombs (ones with Xs) as '3'
-                    tile = '3'
+                    if coleq(impx[pxy][pxx]): # if center is also red, it's 3
+                        tile = '3'
+                    else:
+                        tile = 'B'
                     break
                 elif coleq(xycol, COL_4):
                     tile = '4'
