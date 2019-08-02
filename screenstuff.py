@@ -548,6 +548,7 @@ if __name__ == '__main__':
 ##            except AIStalledException:
             except:
                 print()
+                print('A FATAL ERROR OCCURED!')
                 ai.printstats()
                 print('',flush=True) # flush print, then re-raise
                 raise

@@ -303,27 +303,33 @@ class AI:
         print(' updated {0} new finds'.format(len(foundout)))
 
 
-    def needschorded(self, x, y, findoutcenter=False):
-        chord = self.chord
+    def needschorded(self, x, y, findoutcenter=False, _mentalflagsmustoverride=True):
+        # if mentalflags is True, then chording won't work in the actual game
+        chord = self.chord and (not self.mentalflags or not _mentalflagsmustoverride)
         tup = (x, y)
+        tile = self.tiles[y][x]
+        # note: if tile is unknown, don't do non-chord strategy, because it likely causes problems (namely with clicking bombs)
+        if tile.isunknown():
+            chord = True
         # if should chord, mark the center as to be clicked
         if chord and tup not in self.toclick:
             self.toclick.append(tup)
-        neighbors = list(self.tiles[y][x].neighbors)
+        neighbors = list(tile.neighbors)
         if findoutcenter: # if center needs found too, append it
-            neighbors += [ self.tiles[y][x] ]
+            neighbors += [ tile ]
         for ctile in neighbors:
             ctup = ctile.coords
             # find out the neighboring tile's new arounds
             if ctile.isunknown() or ctile.isnumber():
                 if ctup not in self.tofindout:
+                    print(ctup)
                     self.tofindout.append(ctup)
             if ctile.isunknown():
                 # if not chord, then click unknowns
                 if not chord:
                     self.toclick.append(ctup)
                     #debugging info (for an unexpectedly unregistered unknown)
-                    if ctile not in self.tiles[y][x].unknowns:
+                    if tile.isnumber() and ctile not in tile.unknowns:
                         print('  debug: {1} was not registered as unknown of {0}'
                               .format(ctile.coords, tup))
                 # mark unknowns as find-out, because they won't be unknowns anymore
@@ -343,11 +349,13 @@ class AI:
 
     def needsmarked(self, x, y, rawgrid, editrawgrid=True): #TODO self.mentalflags
         tile = self.tiles[y][x]
-        self.tomark.append(tile.coords)
         tile.setTile(FLAG) # set it prematurely as a flag; we know it will be
-        if editrawgrid:
-            rawgrid[y][x] = FLAG # edit the actual rawgrid to keep it up-to-date
         self.flags.add(tile.coords) # track it as a flag
+        if editrawgrid: # just a note: even if self.mentalflags is true, this still happens (cause it's before the abort)
+            rawgrid[y][x] = FLAG # edit the actual rawgrid to keep it up-to-date
+        if self.mentalflags:
+            return # abort early if flags are being kept mentally, and not actually clicked
+        self.tomark.append(tile.coords)
         if self.verbose:
             print('  marking',tile.coords)
 
@@ -865,7 +873,7 @@ class AI:
 
 
     def printstats(self):
-        print('printing AI state...')
+        print('printing AI stats...')
         print()
         runs = self.stats['runs']
         iters = self.stats['iterations']
@@ -875,8 +883,8 @@ class AI:
               .format(runs))
         print('total iterations: {0} (average {1:.2f} per run)'
               .format(iters, iters/runs))
-        print('runs hit the max iteration limit {0} times ({1:.2%} of all runs)'
-              .format(maxiters, maxiters/runs))
+        print('runs hit the max iteration limit {0} times ({1:.2%} of all runs) (limit={2})'
+              .format(maxiters, maxiters/runs, self.maxiters))
         print()
         print('AI\'s normal algorithm stalled {0} times (first-iters) ({1:.2%} of all runs)'
               .format(fis, fis/runs))
