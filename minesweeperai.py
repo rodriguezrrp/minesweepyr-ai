@@ -1,8 +1,7 @@
 ## code by rodriguezrrp on GitHub
 ## MIT license
 
-from random import choice as choose
-from random import shuffle as shuffle
+from random import choice as choose, shuffle
 
 ##from sys import stderr as sys_stderr
 
@@ -147,6 +146,7 @@ class AI:
     markingedits = True # if needsmarked can edit the rawgrid (for keeping-up-to-date reasons)
 
     def reverse(l, rev=True):
+        #pylint:disable=no-self-argument,unsubscriptable-object
         '''generator which configurably reverses iteration over list/range/etc.'''
         lr = ( range(len(l)-1,-1,-1) if rev else range(0,len(l)) )
         for i in lr:
@@ -742,7 +742,7 @@ class AI:
 
     def iterate(self, rawgrid, foundout, isfirstiter,
                 altPassDirection=False,): #return False to stop iter
-        self.alternatethispass = ( bool(altPassDirection) == True )
+        self.alternatethispass = ( bool(altPassDirection) == True ) TODO self.alternatethispass
         print('AI iterating...')
         if self.verbose:
             print(' alternatethispass =',self.alternatethispass)
@@ -863,7 +863,7 @@ class AI:
     def printstate(self):
         print('printing AI state...')
         state = ''
-        state += self.tilestostr('tiles:',lambda t: t.tile)
+        state += self.tilestostr('tiles:',lambda t: t.tile) #pylint:disable=no-member
         state += self.tilestostr('tracked:',lambda t: 'x' if t in self.tracked else '.')
         state += self.tilestostr('unknowns around:',
                             lambda t: len(t.unknowns) if hasattr(t, 'unknowns') else '.')
@@ -887,7 +887,7 @@ class AI:
         print('total iterations: {0} (average {1:.2f} per run)'
               .format(iters, iters/runs))
         print('runs hit the max iteration limit {0} times ({1:.2%} of all runs) (limit={2})'
-              .format(maxiters, maxiters/runs, self.maxiters))
+              .format(maxiters, maxiters/runs, maxiters))
         print()
         print('AI\'s normal algorithm stalled {0} times (first-iters) ({1:.2%} of all runs)'
               .format(fis, fis/runs))

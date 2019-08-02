@@ -93,7 +93,7 @@ if __name__ == '__main__':
                     else:
                         newval = bool(inp)
                     configopts[config] = newval
-                print(' {0} = {1}'.format(name,newval))
+                print(' {0} = {1}'.format(config, newval))
             break
         
         elif inp == 'image':
@@ -355,7 +355,7 @@ if __name__ == '__main__':
                     break
                 elif coleq(xycol, COL_3):
                     # note: tends to label clicked bombs (ones with Xs) as '3'
-                    if coleq(impx[pxy][pxx]): # if center is also red, it's 3
+                    if coleq(impx[pxy][pxx], COL_3): # if center is also red, it's 3
                         tile = '3'
                     else:
                         tile = 'B'
