@@ -64,6 +64,7 @@ if __name__ == '__main__':
         'minimizeMouseUsage': True,
         'maxPassesPerIteration': 15,
         'smartStalledRandomClick': True,
+        'smartClickAvoidCorners': False,
         'stalledSubsetCheck': True,
         'stalledBruteForceCheck': False,
         'alternatePassDirection': False,
@@ -93,7 +94,11 @@ if __name__ == '__main__':
                     else:
                         newval = bool(inp)
                     configopts[config] = newval
+                else:
+                    newval = configopts[config] # get the old just for printing
                 print(' {0} = {1}'.format(config, newval))
+
+            print(' config finished\n')
             break
         
         elif inp == 'image':
@@ -109,18 +114,20 @@ if __name__ == '__main__':
     def instantiateAI(rawgrid, totalbombs=None):
         global ai
         if customaiconfig:
-            ai = AI(rawgrid,
-                    verbose = configopts['verbose'],
-                    chord = configopts['chord'],
-                    totalBombsCount = totalbombs,
-                    minimizeMouseUsage       = configopts['minimizeMouseUsage'],
-                    maxPassesPerIteration    = configopts['maxPassesPerIteration'],
-                    smartStalledRandomClick  = configopts['smartStalledRandomClick'],
-                    stalledSubsetCheck       = configopts['stalledSubsetCheck'],
-                    stalledBruteForceCheck   = configopts['stalledBruteForceCheck'],
-                    alternatePassDirection   = configopts['alternatePassDirection'],
-                    mentallyTrackFlags       = configopts['mentallyTrackFlags']
-                    )
+##            ai = AI(rawgrid,
+##                    verbose = configopts['verbose'],
+##                    chord = configopts['chord'],
+##                    totalBombsCount = totalbombs,
+##                    minimizeMouseUsage       = configopts['minimizeMouseUsage'],
+##                    maxPassesPerIteration    = configopts['maxPassesPerIteration'],
+##                    smartStalledRandomClick  = configopts['smartStalledRandomClick'],
+##                    smartClickAvoidCorners   = configopts['smartClickAvoidCorners'],
+##                    stalledSubsetCheck       = configopts['stalledSubsetCheck'],
+##                    stalledBruteForceCheck   = configopts['stalledBruteForceCheck'],
+##                    alternatePassDirection   = configopts['alternatePassDirection'],
+##                    mentallyTrackFlags       = configopts['mentallyTrackFlags']
+##                    )
+            ai = AI(rawgrid, **configopts)
         else:
             ai = AI(rawgrid, verbose=VERBOSE, totalBombsCount=totalbombs)
 

@@ -158,11 +158,14 @@ class AI:
     # self.verbose              - verbose
     # self.chord                - chord
     # self.totalbombs           - totalBombsCount
-    # self.minmouseusage        - minimizeMouseUsage        - sort-of done (?)
-    # self.maxpasses            - maxPassesPerIteration
+    # self.minmouseusage        - minimizeMouseUsage        - done (?)
+    # self.maxpasses            - maxPassesPerIteration   <---- TODO try passing in the foundouts which are numbers into the next iteration in same run? just don't pass the needsfounds? or ignore them in updatefounds?
     # self.smartstalledclick    - smartStalledRandomClick
+    # self.clickavoidcorners    - smartClickAvoidCorners    - TODO
+    # TODO: make an option for strategy (ex. screencenter, islandcenter, etc.)
     # self.stalledsubset        - stalledSubsetCheck
     # self.stalledbruteforce    - stalledBruteForceCheck    - TODO
+    # self.stalledislandcheck   - stalledIslandCheck        - TODO
     # self.alternatepass        - alternatePassDirection    - TODO
     # self.mentalflags          - mentallyTrackFlags
 
@@ -182,7 +185,9 @@ class AI:
                  totalBombsCount=None,
                  minimizeMouseUsage=True, maxPassesPerIteration=10,
                  smartStalledRandomClick=True,
+                 smartClickAvoidCorners=False,
                  stalledSubsetCheck=True, stalledBruteForceCheck=False,
+                 stalledIslandCheck=False,
                  alternatePassDirection=False, mentallyTrackFlags=False):
         # validation stuff
         if maxPassesPerIteration < 1:
@@ -195,9 +200,11 @@ class AI:
         self.minmouseusage = minimizeMouseUsage
         self.maxpasses = maxPassesPerIteration
         self.smartstalledclick = smartStalledRandomClick
+        self.clickavoidcorners = smartClickAvoidCorners
         self.totalbombs = totalBombsCount
         self.stalledsubset = stalledSubsetCheck
         self.stalledbruteforce = stalledBruteForceCheck
+        self.stalledislandcheck = stalledIslandCheck
         self.alternatepass = alternatePassDirection
         self.mentalflags = mentallyTrackFlags
 
@@ -326,7 +333,7 @@ class AI:
             # find out the neighboring tile's new arounds
             if ctile.isunknown() or ctile.isnumber():
                 if ctup not in self.tofindout:
-                    print(ctup)
+##                    print(ctup)
                     self.tofindout.append(ctup)
             if ctile.isunknown():
                 # if not chord, then click unknowns
@@ -377,7 +384,7 @@ class AI:
                         if isunknown(rawgrid[y][x]): # note: using string check, not Tile
 ##                            foundrnd = True
                             self.needschorded(x, y, findoutcenter=True)
-                            print('  AI found new random click at',(x,y))
+                            print('  AI chose new random click at',(x,y))
                             return
 ##                            break
 ##                    if foundrnd == True:
@@ -689,7 +696,7 @@ class AI:
             
             ## if failed, try to find a random click
             
-            print(' trying to find random click position...')
+            print(' trying to choose uncertain click position...')
 
             self.recstat('stalledrandomclick')
             self.stalledclick(rawgrid)
@@ -888,14 +895,14 @@ class AI:
         print('total iterations: {0} (average {1:.2f} per run)'
               .format(iters, iters/runs))
         print('runs hit the max iteration limit {0} times ({1:.2%} of all runs) (limit={2})'
-              .format(maxiters, maxiters/runs, maxiters))
+              .format(maxiters, maxiters/runs, self.maxpasses))
         print()
         print('AI\'s normal algorithm stalled {0} times (first-iters) ({1:.2%} of all runs)'
               .format(fis, fis/runs))
         print(' stalling algorithm success:')
         for key, atts in self.stats['stallattempts'].items():
             succs = self.stats['stallsuccesses'][key] if key in self.stats['stallsuccesses'] else 0
-            print(" algorithm '{0}': solved {1:.2%} of stalls ({2:.1%} self; {3}/{4} s/a)"
+            print(" algorithm '{0}': solved {1:.2%} of stalls ({2:.1%} self {3}/{4} s/a)"
                   .format(key, succs/fis, succs/atts, succs, atts))
         
 
