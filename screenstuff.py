@@ -85,9 +85,45 @@ if __name__ == '__main__':
         if inp == 'config':
             customaiconfig = True
             print('note: for each config setting, entering nothing will set it to default')
-            
+
+            # first do file configs (the ones above)
+            cfgdefs = [
+                ('GRIDSTYLE', GRIDSTYLE),
+                ('MOVEDUR', MOVEDUR),
+                ('MARKDELAY', MARKDELAY),
+                ('WAITTOMARK', WAITTOMARK),
+                ('CLICKDELAY', CLICKDELAY),
+                ('WAITTOCLICK', WAITTOCLICK),
+                ('BETWEENDELAY', BETWEENDELAY),
+                ('ITERATIONSLEEP', ITERATIONSLEEP)
+                ]
+            for cfg, default in cfgdefs:
+                inp = input(' {0} (= {1}): '.format(cfg, default))
+                if inp != '':
+                    newval = float(inp)
+                    if cfg == 'GRIDSTYLE':
+                        GRIDSTYLE = newval
+                    elif cfg == 'MOVEDUR':
+                        MOVEDUR = newval
+                    elif cfg == 'MARKDELAY':
+                        MARKDELAY = newval
+                    elif cfg == 'WAITTOMARK':
+                        WAITTOMARK = newval
+                    elif cfg == 'CLICKDELAY':
+                        CLICKDELAY = newval
+                    elif cfg == 'WAITTOCLICK':
+                        WAITTOCLICK = newval
+                    elif cfg == 'BETWEENDELAY':
+                        BETWEENDELAY = newval
+                    elif cfg == 'ITERATIONSLEEP':
+                        ITERATIONSLEEP = newval
+                else:
+                    newval = default
+                print(' {0} = {1}'.format(cfg, newval))
+
+            # then do ai configs (the init parameters)
             for config, val in configopts.items(): # for each key:value pair in configopts
-                inp = input(' {0}: '.format(config))
+                inp = input(' {0} (= {1}): '.format(config, val))
                 if inp != '':
                     if config in configoptsints:
                         newval = int(inp)
@@ -99,6 +135,8 @@ if __name__ == '__main__':
                 print(' {0} = {1}'.format(config, newval))
 
             print(' config finished\n')
+##            print(' waiting a second for convenience...')
+##            time.sleep(1)
             break
         
         elif inp == 'image':

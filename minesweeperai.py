@@ -27,7 +27,6 @@ FLAG       = 'F'
 UNKNOWN    = '-'
 EXPLODED   = 'B'
 NEEDSFOUND = '?' # for things that need found out, but at least are not 'unknown' ('-')
-##EFFECTIVELYUNKNOWN = (UNKNOWN, NEEDSFOUND)
 
 def isnumber(tile):
     if type(tile) != str:
