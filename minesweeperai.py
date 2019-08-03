@@ -166,8 +166,9 @@ class AI:
     # self.alternatepass        - alternatePassDirection    - TODO
     # self.mentalflags          - mentallyTrackFlags
 
-    # note that: self.alternatethispass is used in each specific iteration
-
+    # note that: self.alternatethispass is used in each specific iteration.
+    #    on that note, the only place it's used is in analyzetracked, for the order it analyzes
+    
     # also has:
     # self.tracked   - should be Tile objects
     # self.tofindout - should be tuples
@@ -179,9 +180,9 @@ class AI:
     def __init__(self, rawgrid,
                  verbose=True, chord=True,
                  totalBombsCount=None,
-                 minimizeMouseUsage=False, maxPassesPerIteration=1,
+                 minimizeMouseUsage=True, maxPassesPerIteration=10,
                  smartStalledRandomClick=True,
-                 stalledSubsetCheck=False, stalledBruteForceCheck=False,
+                 stalledSubsetCheck=True, stalledBruteForceCheck=False,
                  alternatePassDirection=False, mentallyTrackFlags=False):
         # validation stuff
         if maxPassesPerIteration < 1:
@@ -474,7 +475,7 @@ class AI:
     def analyzetracked(self, rawgrid):
         ## analyze the tracked numbers
         untrack = []
-        for tile in self.tracked:
+        for tile in AI.reverse(self.tracked, rev=self.alternatethispass):
             tup = tile.coords
             x, y = tup
             if self.verbose:
@@ -742,7 +743,7 @@ class AI:
 
     def iterate(self, rawgrid, foundout, isfirstiter,
                 altPassDirection=False,): #return False to stop iter
-        self.alternatethispass = ( bool(altPassDirection) == True ) TODO self.alternatethispass
+        self.alternatethispass = ( bool(altPassDirection) == True )
         print('AI iterating...')
         if self.verbose:
             print(' alternatethispass =',self.alternatethispass)
