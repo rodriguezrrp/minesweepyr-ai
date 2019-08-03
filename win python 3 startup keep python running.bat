@@ -1,0 +1,1 @@
+cmd /k py -i screenstuff.py
