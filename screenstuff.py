@@ -62,12 +62,12 @@ if __name__ == '__main__':
         'verbose': VERBOSE,
         'chord': True,
         'minimizeMouseUsage': True,
-        'maxPassesPerIteration': 15,
+        'maxItersPerRun': 15,
         'smartStalledRandomClick': True,
-        'smartClickAvoidCorners': False,
+        'smartClickAvoidCorners': True,
         'stalledSubsetCheck': True,
-        'stalledBruteForceCheck': False,
-        'alternatePassDirection': False,
+##        'stalledBruteForceCheck': False,
+        'alternatePassDirection': True,
         'mentallyTrackFlags': False
         }
     # cast these to int instead of bool

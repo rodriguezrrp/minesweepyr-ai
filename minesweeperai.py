@@ -142,6 +142,12 @@ class AI:
 
     defaultunknownchance = 0.17 # rather arbitrary; based off of intermediate to expert
 
+    # first (default): go with the first best one it encounters
+    # screencenter: if tied for best, go with the one closer to the center of the game screen
+    # islandcenter: if tied for best, go with closest to center of the island it's in (effectively equal to screencenter if self.islandcheck is False)
+    #
+    smartclickpolicies = ('first','screencenter','islandcenter',)
+
     markingedits = True # if needsmarked can edit the rawgrid (for keeping-up-to-date reasons)
 
     def reverse(l, rev=True):
@@ -158,19 +164,23 @@ class AI:
     # self.chord                - chord
     # self.totalbombs           - totalBombsCount
     # self.minmouseusage        - minimizeMouseUsage        - done (?)
-    # self.maxpasses            - maxPassesPerIteration   <---- TODO try passing in the foundouts which are numbers into the next iteration in same run? just don't pass the needsfounds? or ignore them in updatefounds?
+    # self.maxpasses            - maxItersPerRun   <---- TODO try passing in the foundouts which are numbers into the next iteration in same run? just don't pass the needsfounds? or ignore them in updatefounds?
     # self.smartstalledclick    - smartStalledRandomClick
     # self.clickavoidcorners    - smartClickAvoidCorners    - TODO
     # TODO: make an option for strategy (ex. screencenter, islandcenter, etc.)
+    #   such as self.clickpolicy      - smartClickPolicy         - TODO
     # self.stalledsubset        - stalledSubsetCheck
     # self.stalledbruteforce    - stalledBruteForceCheck    - TODO
-    # self.stalledislandcheck   - stalledIslandCheck        - TODO
-    # self.alternatepass        - alternatePassDirection    - TODO
+    # self.islandcheck          - islandCheckEvery          - TODO  <- actually a number
+    # self.alternatepass        - alternatePassDirection    - done (?)
     # self.mentalflags          - mentallyTrackFlags
 
     # note that: self.alternatethispass is used in each specific iteration.
     #    on that note, the only place it's used is in analyzetracked, for the order it analyzes
-    
+
+    # islandcheck tells it how many runs to do before it does an island check (i.e. if =2, it'll do every other; it checks, doesn't, does, doesn't, etc.)
+    #    None will tell it not to do any island checks
+
     # also has:
     # self.tracked   - should be Tile objects
     # self.tofindout - should be tuples
@@ -182,28 +192,34 @@ class AI:
     def __init__(self, rawgrid,
                  verbose=True, chord=True,
                  totalBombsCount=None,
-                 minimizeMouseUsage=True, maxPassesPerIteration=10,
+                 minimizeMouseUsage=True, maxItersPerRun=10,
                  smartStalledRandomClick=True,
                  smartClickAvoidCorners=False,
+                 smartClickPolicy=None,
                  stalledSubsetCheck=True, stalledBruteForceCheck=False,
-                 stalledIslandCheck=False,
+                 islandCheckEvery=None,
                  alternatePassDirection=False, mentallyTrackFlags=False):
         # validation stuff
-        if maxPassesPerIteration < 1:
+        if maxItersPerRun < 1:
             raise ValueError('maxPassesPerIteration must be at least 1!')
         if totalBombsCount!=None and ( type(totalBombsCount)!=int or totalBombsCount<1 ):
             raise ValueError('totalBombsCount must be either None or a positive integer!')
+        if islandCheckEvery!=None and ( type(islandCheckEvery)!=int or islandCheckEvery<1 ):
+            raise ValueError('islandCheckEvery must be either None or a positive integer!')
+        if smartClickPolicy!=None and ( type(smartClickPolicy)!=str or smartClickPolicy not in AI.smartclickpolicies ):
+            raise ValueError('smartClickPolicy must be one of the current policy names:',AI.smartclickpolicies)
         # config stuff
         self.verbose = verbose
         self.chord = chord
         self.minmouseusage = minimizeMouseUsage
-        self.maxpasses = maxPassesPerIteration
+        self.maxpasses = maxItersPerRun
         self.smartstalledclick = smartStalledRandomClick
         self.clickavoidcorners = smartClickAvoidCorners
+        self.clickpolicy = smartClickPolicy if smartClickPolicy != None else AI.smartclickpolicies[0]
         self.totalbombs = totalBombsCount
         self.stalledsubset = stalledSubsetCheck
         self.stalledbruteforce = stalledBruteForceCheck
-        self.stalledislandcheck = stalledIslandCheck
+        self.islandcheck = islandCheckEvery
         self.alternatepass = alternatePassDirection
         self.mentalflags = mentallyTrackFlags
 
@@ -440,7 +456,10 @@ class AI:
                         chance = max(wrongprobs)
                     
                     # see if it's a better candidate
-                    if candidate == None or chance < candidate.chance:
+                    cornerposes = [(0,0), (0,len(self.tiles)-1), (len(self.tiles[0])-1,0), (len(self.tiles[0])-1,len(self.tiles)-1)]
+                    if ( candidate == None or chance < candidate.chance # basic lazy and best match checks
+                                # or we should avoid corners and candidate is in a corner while current tile isn't
+                                or (self.clickavoidcorners and chance <= candidate.chance and (candidate.coords in cornerposes) and (tile.coords not in cornerposes)) ):
                         if candidate != None: # clear previous' .chance if possible
                             del candidate.chance # cleanup
                         # save the chance to the Tile object, for easy data correlation
@@ -832,7 +851,7 @@ class AI:
                   .format(len(self.tomark), len(self.toclick), len(self.tofindout)))
             self.stashtomark += self.tomark
             self.stashtoclick += self.toclick
-            self.stashtofindout += self.tofindout
+            self.stashtofindout += self.tofindout # TODO keep these prevs & compare for equals?
             
             itercount += 1
         if self.verbose:
