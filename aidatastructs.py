@@ -2,12 +2,19 @@ import traceback
 from typing import Dict, Tuple, Set, Union, List, Any, Optional, Iterable
 import itertools
 
+from printer import inc_prtlvl, dec_prtlvl, debug, info, warn, error
+
 ## aidatastructs provides the underlying data structures that the ai uses
 
-def positions_around(x: int, y: int, radius: int=1):
+def positions_around(x: int, y: int, maxx: Optional[int], maxy: Optional[int],
+                    radius: int=1, minx: Optional[int]=0, miny: Optional[int]=0):
     radius=abs(radius)
-    _xrange = range(x-radius,x+radius+1)
-    _yrange = range(y-radius,y+radius+1)
+    lx = x-radius   if minx is None else max(x-radius,  minx)
+    hx = x+radius+1 if maxx is None else min(x+radius+1,maxx)
+    ly = y-radius   if miny is None else max(y-radius,  miny)
+    hy = y+radius+1 if maxy is None else min(y+radius+1,maxy)
+    _xrange = range(lx,hx)
+    _yrange = range(ly,hy)
     return itertools.product(_xrange,_yrange)
 
 #############################
@@ -29,8 +36,8 @@ class TileIsland (object):
     #   and if insertion was not successful:
     #           this method will add the new island to the islands parameter (MUTATING the parameter!)
     @staticmethod
-    def insertInto(islands: List[TileIsland], newgroup: TileGroup) -> None:
-        firstsuccess: Optional[TileIsland] = None
+    def insertInto(islands: List['TileIsland'], newgroup: 'TileGroup') -> None:
+        firstsuccess: Optional['TileIsland'] = None
         toremove = []
         for island in islands:
             # will be true if successful (if it found a group that intersects)
@@ -43,7 +50,12 @@ class TileIsland (object):
         for island in toremove:
             islands.remove(island) # MUTATING the parameter! Removing all islands which were merged with it
         if(firstsuccess == None):
+            inc_prtlvl()
+            debug('previous insertion failed; creating a new island and adding it to list')
+            dec_prtlvl()
             newisland = TileIsland(groups=[newgroup])
+            print("newisland = " + str(newisland))
+            print("newisland groups: " + str(list(newisland.get_groups()))) #TODO remove these two print()s, they're just debugging
             islands.append(newisland)
 
     ## non-static methods
@@ -61,8 +73,14 @@ class TileIsland (object):
         self.groups_y_offset: int = 0
         # self.groups_map_width: int = 0 <- removed because jaggedness is not supported after all
         # self.groups_map_height: int = 0
+        
+        # self
+        # for g in groups[1:]:
+        #     self._put_group()
         for g in groups:
-            self._put_group()
+            print('trying to insert group {}...'.format(g))
+            self.try_to_insert(g, require_intersection=False)
+            print('self groups list: ' + string(list(self.get_groups())))
     
 
     def _ensure_room_for_group(self, absx, absy):
@@ -122,12 +140,12 @@ class TileIsland (object):
         relx, rely = self._scaled_pos(absx, absy) #type: Tuple[Any,Any]
         if( not (0<=rely and rely<len(self.groups_map)) ):
             rely = None
-        if( not (0<=relx and relx<len(self.groups_map[0])) ):
+        if( not (0<=relx and len(self.groups_map)>0 and relx<len(self.groups_map[0])) ):
             relx = None
         return relx, rely
 
     # could return None, if there's no group at those positions
-    def get_group(self, absx: int, absy: int) -> Optional[TileGroup]:
+    def get_group(self, absx: int, absy: int) -> Optional['TileGroup']:
         relx, rely = self._bounded_scaled_pos(absx, absy)
         if(relx is None or rely is None): return None
         return self.groups_map[rely][relx]
@@ -140,14 +158,14 @@ class TileIsland (object):
 
     # returns true if merge was successful; returns false if merge could not happen (the newgroup was completely disconnected from this island)
     #   MODIFIES newgroup's myisland and islandneighbors, but ONLY IF insertion was successful (at least one group intersected with newgroup)
-    def try_to_insert(self, newgroup: TileGroup, require_intersection: bool=True) -> bool:
+    def try_to_insert(self, newgroup: 'TileGroup', require_intersection: bool=True) -> bool:
         gx, gy = newgroup.centerpos
         # self._ensure_room_for_group(gx, gy)
         if self.get_group(gx, gy) is not None: #NOTE: is this assertion necessary, or should it just overwrite anyway?
             raise ValueError("trying to insert newgroup, but a group already existed at centerpos ({}, {})!".format(gx, gy))
         # for group in self.groups_list:
         found_connection = False # used to help track when to set newgroup.myisland
-        for pos in positions_around(gx, gy, radius=1): # only check the ones that would be next to it - its potential neighbors
+        for pos in positions_around(gx, gy, maxx=None, maxy=None, radius=1, minx=None, miny=None): # only check the ones that would be next to it - its potential neighbors
             x, y = pos
             group = self.get_group(x, y)
             if not group: continue # if there was no group at those coords, then try the next
@@ -167,11 +185,11 @@ class TileIsland (object):
     #     if()
 
     # Merges the incomingisland into self. Does not modify incomingisland. Modifies self.
-    def merge_incoming_island(self, incomingisland: TileIsland):
+    def merge_incoming_island(self, incomingisland: 'TileIsland'):
         for newgroup in incomingisland.get_groups():
             self.try_to_insert(newgroup, require_intersection=False)
 
-    def remove_group(self, group: TileGroup):
+    def remove_group(self, group: 'TileGroup'):
         if(group.myisland is not self): raise ValueError("trying to remove group from self, but group.myisland was not self!")
         TileGroup._disconnect_all_neighbors(group)
         group.myisland = None
@@ -199,7 +217,7 @@ class ChordContext (object):
     ## static methods
 
     @staticmethod
-    def to_pos_list(mixedelems: Iterable[Union[Tuple[int, int], ChordContext]]) -> List[Tuple[int, int]]:
+    def to_pos_list(mixedelems: Iterable[Union[Tuple[int, int], 'ChordContext']]) -> List[Tuple[int, int]]:
         contexts: List[ChordContext] =       [] #list(e for e in mixedelems if isinstance(e, ChordContext))
         noncontexts: List[Tuple[int, int]] = [] #list(e for e in mixedelems if not isinstance(e, ChordContext))
         for e in mixedelems:
@@ -212,7 +230,7 @@ class ChordContext (object):
         return contextscoords + noncontexts
 
     @staticmethod
-    def remove_redundants(contexts: List[ChordContext]) -> None:
+    def remove_redundants(contexts: List['ChordContext']) -> None:
         # flatten the x,y coords from all the unknowns sets from all the contexts
         coords = list( itertools.chain.from_iterable((p for p in cxt.unknowns) for cxt in contexts) )
         # Setup the dictionary which tracks which coords are duplicated
@@ -247,17 +265,17 @@ class TileGroup (object):
     ## static methods
     
     @staticmethod
-    def _connect_groups(group1: TileGroup, group2: TileGroup) -> None:
+    def _connect_groups(group1: 'TileGroup', group2: 'TileGroup') -> None:
         group1.islandneighbors.add(group2)
         group2.islandneighbors.add(group1)
 
     @staticmethod
-    def _disconnect_groups(group1: TileGroup, group2: TileGroup) -> None:
+    def _disconnect_groups(group1: 'TileGroup', group2: 'TileGroup') -> None:
         group1.islandneighbors.remove(group2)
         group2.islandneighbors.remove(group1)
     
     @staticmethod
-    def _disconnect_all_neighbors(group: TileGroup) -> None:
+    def _disconnect_all_neighbors(group: 'TileGroup') -> None:
         for neighbor in group.islandneighbors:
             neighbor.islandneighbors.remove(group)
         group.islandneighbors.clear()
@@ -297,7 +315,7 @@ class TileGroup (object):
 
     # TODO: this needs to happen after all attempt_intersect_resolves, to allow neighbors to get properly updated (partitioned)?
     #       extra NOTE: this may not matter, if dissolving and resolving happen repeatedly...
-    def attempt_self_dissolve(self: TileGroup, chordpolicy: bool,
+    def attempt_self_dissolve(self: 'TileGroup', chordpolicy: bool,
             toclick: Set[Union[Tuple[int,int],ChordContext]], tomark: Set[Tuple[int,int]],
             tofindout: Set[Tuple[int, int]]) -> None:
         if not self.myisland: raise RuntimeError("tried to dissolve self in self.myisland, but myisland was not yet set!")
@@ -317,11 +335,11 @@ class TileGroup (object):
             tofindout.update(self.unknowns)
             self.myisland.remove_group(self)
 
-    def resolve_against_neighbors(self: TileGroup) -> None:
+    def resolve_against_neighbors(self: 'TileGroup') -> None:
         for othergroup in self.islandneighbors:
             self.attempt_intersect_resolve(othergroup)
 
-    def attempt_intersect_resolve(self: TileGroup, othergroup: TileGroup) -> None:
+    def attempt_intersect_resolve(self: 'TileGroup', othergroup: 'TileGroup') -> None:
         # input validation...
         if(self is othergroup): return #TODO maybe output debug msg, for self being other?
         if not self.myisland: raise RuntimeError("tried to resolve self with othergroup, but self.myisland was not yet set!")
@@ -354,6 +372,6 @@ class TileGroup (object):
     # def intersects_with_group(self, othergroup: TileGroup) -> bool:
     #     return
 
-    def intersects_with(self, othergroup: TileGroup) -> bool:
+    def intersects_with(self, othergroup: 'TileGroup') -> bool:
         intersection = self.unknowns.intersection(othergroup.unknowns)
         return len(intersection) > 0

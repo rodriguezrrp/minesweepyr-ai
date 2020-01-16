@@ -9,3 +9,5 @@ if __name__ == "__main__":
 
     ## GO TIME! :D
     driver.play()
+
+    driver.cleanup()

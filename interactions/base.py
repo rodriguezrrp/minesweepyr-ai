@@ -1,9 +1,12 @@
-
+from typing import List
 
 class InteractionBase (object):
 
     def calibration(self) -> None:
         return
+
+    def get_grid(self) -> List[List[str]]:
+        raise NotImplementedError
 
     def click(self, x, y) -> None:
         raise NotImplementedError

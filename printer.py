@@ -47,7 +47,7 @@ def out(msg='', end='\n', flush=False, prtlvl=None, inc=False, dec=False):
         prtlvl = int(prtlvl)
     if(inc): inc_prtlvl() # always do inc before printing
     if(dec and not inc): dec_prtlvl() # if only dec, do it before printing
-    print(_getindent(prtlvl) + msg, end=end, flush=flush)
+    print(_getindent(prtlvl) + str(msg), end=end, flush=flush)
     if(dec and inc): dec_prtlvl() # if both inc and dec, do dec after printing
 
 SEVERITY_DEBUG = 0
