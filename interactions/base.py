@@ -13,3 +13,6 @@ class InteractionBase (object):
 
     def findout(self, x, y) -> str:
         raise NotImplementedError
+
+    def cleanup(self) -> None:
+        return
