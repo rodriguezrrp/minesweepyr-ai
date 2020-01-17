@@ -41,12 +41,12 @@ def dec_prtlvl(dec_amt=1):
         _prtlvl = 0
 
 def out(msg='', end='\n', flush=False, prtlvl=None, inc=False, dec=False):
+    if(inc): inc_prtlvl() # always do inc before printing
+    if(dec and not inc): dec_prtlvl() # if only dec, do it before printing
     if(prtlvl==None):
         prtlvl = _prtlvl
     else:
         prtlvl = int(prtlvl)
-    if(inc): inc_prtlvl() # always do inc before printing
-    if(dec and not inc): dec_prtlvl() # if only dec, do it before printing
     print(_getindent(prtlvl) + str(msg), end=end, flush=flush)
     if(dec and inc): dec_prtlvl() # if both inc and dec, do dec after printing
 
