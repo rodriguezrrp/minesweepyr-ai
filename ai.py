@@ -65,9 +65,11 @@ class AI (object):
                 {p for p in positions_around(x, y, len(grid[0]), len(grid), radius=1) if (
                     p != centerpos and labeling.is_unknown(grid[p[1]][p[0]]))},
                 labeling.digit_of(tile))
-            debug(' ... made!', prtlvl=0)
+            debug(' ... made! {}'.format(newgroup), prtlvl=0)
             # add that new group into self.islands if possible, merging if needed, etc.
             TileIsland.insertInto(self.islands, newgroup)
+        else:
+            debug('',prtlvl=0)
 
 
     ## run an iteration, with a specified island
@@ -77,15 +79,19 @@ class AI (object):
         groups = list(curisland.get_groups())
         debug('island has {} groups'.format(len(groups)))
         # resolve against neighbors first
+        info('attempting to resolve groups against neighbors...'); incprt()
         for group in groups:
             group.resolve_against_neighbors() #TODO will this method's implementation cause any dirtying and desyncing of the looping?
+        decprt()
         # prepare for dissolving deterministic groups
+        info('attempting to dissolve groups...'); incprt()
         dissolvehappened = False
         toclickmixed = set() #type: Set[Union[Tuple[int,int],ChordContext]]
         tomark = set() #type: Set[Tuple[int,int]]
         tofindout = set() #type: Set[Tuple[int,int]]
         for group in groups:
             group.attempt_self_dissolve(self.chordpolicy, toclick=toclickmixed, tomark=tomark, tofindout=tofindout)
+        decprt()
         # if something got added to the lists, then a dissolve happened
         dissolvehappened = ( len(toclickmixed) > 0 or len(tomark) > 0 or len(tofindout) > 0 )
         # if no dissolve happened, do a guessing strategy for the island
@@ -162,11 +168,17 @@ class AI (object):
     def iterate(self, foundout: Iterable[Tuple[Tuple[int,int],str]]) -> Tuple[Set[Tuple[int,int]],Set[Tuple[int,int]],Set[Tuple[int,int]]]:
         # update foundouts
         print('self.islands = ' + str(self.islands))
+        # do all grid updating first
         for found in foundout:
             coords, newtile = found
             cx, cy = coords
             debug(inc=True, dec=True, msg='Replacing found tile at {} - from "{}" to "{}"'.format(coords, self.grid[cy][cx], newtile))
             self.grid[cy][cx] = newtile
+        # do all tilegroups after all grid updating, to prevent getting unknowns that aren't actually unknown
+        for found in foundout:
+            coords, newtile = found
+            cx, cy = coords
+            # debug(inc=True, dec=True, msg='Creating group at {}, tile "{}"'.format(coords, self.grid[cy][cx]))
             self._insert_tilegroup_from_tile(self.grid, cx, cy)
         print('self.islands = ' + str(self.islands))
         # iterate through all the islands to find out the toclick, tomark, and tofindout
