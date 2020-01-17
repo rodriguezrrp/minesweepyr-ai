@@ -2,6 +2,7 @@ from typing import List
 from operator import itemgetter
 from pprint import pformat
 import time
+from platform import system
 
 from .base import InteractionBase
 from printer import inc_prtlvl, dec_prtlvl, debug, info, warn, error
@@ -26,8 +27,15 @@ class InteractionSelenium (InteractionBase):
     def calibration(self) -> None:
         info("Initializing Selenium's Chrome webdriver")
         inc_prtlvl()
-        debug("initializing self.b = webdriver.Chrome(...)")
-        self.b = webdriver.Chrome('./interactions/chromedriver')
+        systype = system() #type: str
+        debug("initializing self.b = webdriver.Chrome(...) for system \"{}\"".format(systype))
+        if systype == 'Windows': ## Windows machine
+            self.b = webdriver.Chrome('./interactions/chromedriver_win32-chrome79.exe')
+        elif systype == 'Darwin': ## Mac machine
+            self.b = webdriver.Chrome('./interactions/chromedriver_mac64')
+        else:
+            raise RuntimeError("InteractionSelenium doesn't know what chromedriver executable"
+                    + " to use for the system type of \"{}\"!".format(systype))
         self.b.set_window_size(300,700)
         debug("navigating to minesweeper.online")
         self.b.get('https://minesweeper.online/')
