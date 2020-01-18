@@ -1,6 +1,7 @@
 import traceback
 from typing import Dict, Tuple, Set, Union, List, Any, Optional, Iterable
 import itertools
+from pprint import pformat
 
 from printer import inc_prtlvl, dec_prtlvl, debug, info, warn, error
 
@@ -40,6 +41,7 @@ class TileIsland (object):
         firstsuccess: Optional['TileIsland'] = None
         toremove = []
         for island in islands:
+            print('    trying to insert newgroup into island - {} - {}'.format(newgroup,island))
             # will be true if successful (if it found a group that intersects)
             if(island.try_to_insert(newgroup, require_intersection=True)):
                 if not firstsuccess:
@@ -103,12 +105,12 @@ class TileIsland (object):
                 dist = len(self.groups_map)-rely+1 # distance to expand
                 widthOfRow = len(self.groups_map[0])
                 for _ in range(dist):
-                    self.groups_map = self.groups_map + [None for _ in range(width)] # append to bottom
+                    self.groups_map = self.groups_map + [None for _ in range(widthOfRow)] # append to bottom
             elif (rely < 0): # expand up
                 dist = 0-rely+1 # distance to expand
                 widthOfRow = len(self.groups_map[0])
                 for _ in range(dist):
-                    self.groups_map = [None for _ in range(width)] + self.groups_map # prepend to top
+                    self.groups_map = [None for _ in range(widthOfRow)] + self.groups_map # prepend to top
 
     # # returns adjusted coordinates based on the self.groups_map's offsets, for retrieving internally
     # def _scaled_pos(self, absx: int, absy: int) -> Tuple[int, int]:
@@ -161,11 +163,18 @@ class TileIsland (object):
     def try_to_insert(self, newgroup: 'TileGroup', require_intersection: bool=True) -> bool:
         gx, gy = newgroup.centerpos
         # self._ensure_room_for_group(gx, gy)
-        if self.get_group(gx, gy) is not None: #NOTE: is this assertion necessary, or should it just overwrite anyway?
-            raise ValueError("trying to insert newgroup, but a group already existed at centerpos ({}, {})!".format(gx, gy))
+        _existing_group = self.get_group(gx, gy)
+        if _existing_group is not None: #NOTE: is this assertion necessary, or should it just overwrite anyway?
+            raise ValueError("""trying to insert newgroup, but a group already existed at centerpos ({}, {})!
+                        new group={}, existing group={}""".format(gx, gy, newgroup, _existing_group))
         print('        [try_to_insert] require_intersection={}'.format(require_intersection))
         # for group in self.groups_list:
         found_connection = False # used to help track when to set newgroup.myisland
+        # if not require_intersection:
+        #     self._ensure_room_for_group(gx, gy)
+        #     newgroup.myisland = self
+        #     newgroup.islandneighbors.clear()
+        # else:
         for pos in positions_around(gx, gy, maxx=None, maxy=None, radius=1, minx=None, miny=None): # only check the ones that would be next to it - its potential neighbors
             x, y = pos
             group = self.get_group(x, y)
@@ -173,13 +182,17 @@ class TileIsland (object):
             if require_intersection and not group: continue # if there was no group at those coords, then try the next
             # see if the group intersects with newgroup
             ignore_intersection = not require_intersection
-            if(ignore_intersection or group.intersects_with(newgroup)):  #type: ignore
+            if(ignore_intersection or group.intersects_with(newgroup)): #type: ignore
                 if(not found_connection):
                     self._ensure_room_for_group(gx, gy)
                     found_connection = True
                     newgroup.myisland = self  # declare self as newgroup's new island
                     newgroup.islandneighbors.clear()  # reset newgroup's neighbors
                     relgx, relgy = self._scaled_pos(gx, gy)
+                    print('    self.groups_map[relgy][relgx] = newgroup:')
+                    print('      rel vals = ({}, {})'.format(relgx, relgy))
+                    print('      newgroup: ' + str(newgroup))
+                    print('      self.groups_map:\n'+pformat(self.groups_map))
                     self.groups_map[relgy][relgx] = newgroup
                 if group: # if this wasn't done via ignore_intersection, then pair the intersecting group
                     TileGroup._connect_groups(newgroup, group)  # pair them up as neighbors
@@ -202,15 +215,17 @@ class TileIsland (object):
         group.myisland = None
 
     # turns this object into a displayable matrix
+    # def __str__(self):
+    #     strout = '\n'.join(' '.join(' ' if x==None else str(x) for x in row) for row in self.groups_map)
+    #     # strout = ""
+    #     # for row in range():
+    #     #     strout += ' '.join([' ' if x==None else str(x) for x in row])
+    #     #     for col in range():
+    #     #         strout += '  ' if col==None else '{} '
+    #     #     strout += '\n'
+    #     return strout
     def __str__(self):
-        strout = '\n'.join(' '.join(' ' if x==None else str(x) for x in row) for row in self.groups_map)
-        # strout = ""
-        # for row in range():
-        #     strout += ' '.join([' ' if x==None else str(x) for x in row])
-        #     for col in range():
-        #         strout += '  ' if col==None else '{} '
-        #     strout += '\n'
-        return strout
+        return 'TileIsland(self.groupsmap=\n{})'.format(pformat(self.groups_map))
 
 
 
@@ -380,4 +395,4 @@ class TileGroup (object):
         return len(intersection) > 0
 
     def __str__(self) -> str:
-        return 'TileGroup(centerpos={},unknowns={},bombs={})'.format(self.centerpos,self.unknowns,self.bombs)
+        return 'TileGroup(centerpos={},unknowns={},bombs={},len(islandneighbors)={})'.format(self.centerpos,self.unknowns,self.bombs,len(self.islandneighbors))
